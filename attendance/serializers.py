@@ -1,6 +1,13 @@
 from rest_framework import serializers
 from rest_framework.relations import PrimaryKeyRelatedField
+from django.contrib.auth.models import User
 from attendance.models import Semester, Course, Lecturer, Student, Class, CollegeDay, Attendance
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
 
 
 class SemesterSerializer(serializers.ModelSerializer):
@@ -38,13 +45,24 @@ class LecturerSerializer(serializers.ModelSerializer):
         return lecturer
 
 
-class StudentSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer):
+class StudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = ('id', 'student_fname', 'student_lname', 'student_email', 'DOB')
+        read_only_fields = ['id']
+
+    def create(self, validated_data):
+        student = Student.objects.create(**validated_data)
+        return student
+
+
+class ClassStudentSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer):
     full_name = serializers.StringRelatedField(source="user.username", read_only=True)
 
     class Meta:
         model = Student
         fields = ('id', 'full_name', 'student_fname', 'student_lname', 'student_email', 'DOB')
-        read_only_fields = ('id', 'full_name')
+        read_only_fields = ['id', 'full_name']
 
     def create(self, validated_data):
         student = Student.objects.create(**validated_data)
@@ -52,7 +70,7 @@ class StudentSerializer(PrimaryKeyRelatedField, serializers.ModelSerializer):
 
 
 class ClassLecturerSerializer(serializers.ModelSerializer):
-    student = StudentSerializer(many=True, queryset=Student.objects.all())
+    student = ClassStudentSerializer(many=True, queryset=Student.objects.all())
 
     class Meta:
         model = Class
@@ -65,7 +83,7 @@ class ClassLecturerSerializer(serializers.ModelSerializer):
 
 
 class ClassSerializer(serializers.ModelSerializer):
-    student = StudentSerializer(many=True, queryset=Student.objects.all())
+    student = ClassStudentSerializer(many=True, queryset=Student.objects.all())
 
     class Meta:
         model = Class

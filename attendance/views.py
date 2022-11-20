@@ -1,8 +1,16 @@
 # Create your views here.
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login, logout
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.decorators import api_view, authentication_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import viewsets, permissions
 from attendance.models import Semester, Course, Lecturer, Student, Class, Attendance, CollegeDay
-from attendance.serializers import SemesterSerializer, CourseSerializer, LecturerSerializer, StudentSerializer, ClassLecturerSerializer, ClassSerializer, AttendanceStudentSerializer, AttendanceSerializer, CollegeDaySerializer
+from attendance.serializers import SemesterSerializer, CourseSerializer, LecturerSerializer, StudentSerializer, \
+    ClassLecturerSerializer, ClassSerializer, AttendanceStudentSerializer, AttendanceSerializer, CollegeDaySerializer, \
+    UserSerializer
 from django.contrib.auth.models import User, Group
 
 
@@ -20,7 +28,7 @@ class SemesterApiView(viewsets.ModelViewSet):
         try:
             request.data.pop('id')
         except KeyError:
-            request.data['id'] = len(self.queryset)+1
+            request.data['id'] = len(self.queryset) + 1
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -57,7 +65,7 @@ class CourseApiView(viewsets.ModelViewSet):
         try:
             request.data.pop('id')
         except KeyError:
-            request.data['id'] = len(self.queryset)+1
+            request.data['id'] = len(self.queryset) + 1
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -98,7 +106,7 @@ class LecturerApiView(viewsets.ModelViewSet):
         lecturer_email = data['lecturer_email']
         lecturer_DOB = data["DOB"]
         dob = str(lecturer_DOB).split(" ")[0].replace("-", "")
-        user = User.objects.create_user(username=lecturer_fname+lecturer_lname, email=lecturer_email)
+        user = User.objects.create_user(username=lecturer_fname + lecturer_lname, email=lecturer_email)
         user.set_password(dob)
         try:
             group = Group.objects.get(name='Lecturer')
@@ -108,7 +116,7 @@ class LecturerApiView(viewsets.ModelViewSet):
             group.save()
             user.groups.add(group)
         user.save()
-        data['id'] = len(self.queryset)+1
+        data['id'] = len(self.queryset) + 1
         data['staff_id'] = user.id
         data['user'] = user.id
         serializer = self.get_serializer(data=data)
@@ -135,8 +143,8 @@ class LecturerApiView(viewsets.ModelViewSet):
         except:
             pass
         instance = Lecturer.objects.get(id=int(kwargs.pop('pk')))
-        if lecturer_fname+lecturer_lname != "":
-            instance.user.username = lecturer_fname+lecturer_lname
+        if lecturer_fname + lecturer_lname != "":
+            instance.user.username = lecturer_fname + lecturer_lname
         if lecturer_email != "":
             instance.user.email = lecturer_email
         if lecturer_DOB != "":
@@ -176,7 +184,6 @@ class StudentApiView(viewsets.ModelViewSet):
     queryset = Student.objects.all()
     users = User.objects.all()
     serializer_class = StudentSerializer
-    lookup_field = 'full_name'
     permission_classes = [permissions.IsAdminUser]
 
     def list(self, request, *args):
@@ -191,7 +198,7 @@ class StudentApiView(viewsets.ModelViewSet):
         student_email = data['student_email']
         student_DOB = data["DOB"]
         dob = str(student_DOB).split(" ")[0].replace("-", "")
-        user = User.objects.create_user(username=student_fname+student_lname, email=student_email)
+        user = User.objects.create_user(username=student_fname + student_lname, email=student_email)
         user.set_password(dob)
         try:
             group = Group.objects.get(name='Student')
@@ -201,7 +208,7 @@ class StudentApiView(viewsets.ModelViewSet):
             group.save()
             user.groups.add(group)
         user.save()
-        data['id'] = len(self.queryset)+1
+        data['id'] = len(self.queryset) + 1
         data['student_id'] = user.id
         data['user'] = user.id
         serializer = self.get_serializer(data=data)
@@ -228,8 +235,8 @@ class StudentApiView(viewsets.ModelViewSet):
         except:
             pass
         instance = Lecturer.objects.get(id=int(kwargs.pop('pk')))
-        if student_fname+student_lname != "":
-            instance.user.username = student_fname+student_lname
+        if student_fname + student_lname != "":
+            instance.user.username = student_fname + student_lname
         if student_email != "":
             instance.user.email = student_email
         if student_DOB != "":
@@ -279,7 +286,7 @@ class CollegeDayApiView(viewsets.ModelViewSet):
         try:
             request.data.pop('id')
         except KeyError:
-            request.data['id'] = len(self.queryset)+1
+            request.data['id'] = len(self.queryset) + 1
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -344,7 +351,7 @@ class AttendanceApiView(viewsets.ModelViewSet):
         try:
             request.data.pop('id')
         except KeyError:
-            request.data['id'] = len(self.queryset)+1
+            request.data['id'] = len(self.queryset) + 1
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -402,13 +409,14 @@ class ClassApiView(viewsets.ModelViewSet):
 
     def create(self, request, *args):
         data = request.data.copy()
-        data['id'] = len(self.queryset)+1
+        data['id'] = len(self.queryset) + 1
         course = Course.objects.get(id=data['course'])
         semester = Semester.objects.get(id=data['semester'])
         lecturer = Lecturer.objects.get(id=data['lecturer'])
         attendStudents = data.pop('student')
         student_all = Student.objects.all()
-        classes = Class.objects.create(id=data['id'], number=data['number'], course=course, semester=semester, lecturer=lecturer)
+        classes = Class.objects.create(id=data['id'], number=data['number'], course=course, semester=semester,
+                                       lecturer=lecturer)
         for student in student_all:
             if str(student.id) in attendStudents:
                 classes.student.add(student)
@@ -450,3 +458,17 @@ class ClassApiView(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance=instance, many=False)
         return Response(serializer.data)
+
+
+class UserViewSets(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+def User_logout(request):
+    request.user.auth_token.delete()
+    logout(request)
+    return Response('User Logged out successfully')

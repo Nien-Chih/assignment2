@@ -15,5 +15,5 @@ from django.shortcuts import render
 #     return render(request, "registration/login.html")
 #
 #
-# def Logout(request):
-#     logout(request)
+def Logout(request):
+    return logout(request)

@@ -1,6 +1,10 @@
 from django.urls import path, include, re_path
+from rest_framework.authtoken import views
+
+import attendance.views
 from attendance.views import SemesterApiView, CourseApiView, LecturerApiView, StudentApiView, CollegeDayApiView, AttendanceApiView, ClassApiView
 from rest_framework.routers import DefaultRouter
+from attendance.authentication import Logout
 
 router = DefaultRouter()
 router.register(r'semesters', SemesterApiView, basename='semester')
@@ -12,6 +16,8 @@ router.register(r'attendances', AttendanceApiView, basename='attendance')
 router.register(r'classes', ClassApiView, basename='class')
 urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
+    path('api-token-auth/', views.obtain_auth_token),
+    path('auth/logout/', attendance.views.User_logout)
 ]
 urlpatterns += router.urls
 #
